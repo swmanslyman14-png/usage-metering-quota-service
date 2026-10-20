@@ -289,6 +289,23 @@ test("concurrent user quota and concurrent identical retries count once", async 
   assert.equal((await ok("/history", g.key)).history.length, 1);
 });
 
+test("usage reports keep account and user totals consistent during consumption", async () => {
+  const f = await fixture(100, 100, 100, 100);
+  const jobs = [];
+  const reports = [];
+  for (let i = 0; i < 20; i++) {
+    jobs.push(consume(f, 1, "report-" + i));
+    reports.push(usage(f));
+  }
+  const data = await Promise.all(reports);
+  await Promise.all(jobs);
+  for (const row of data) {
+    assert.equal(row.account.used, row.user.used);
+    assert.equal(row.account.remaining, row.user.remaining);
+  }
+  assert.equal((await usage(f)).account.used, "20");
+});
+
 test("requests waiting behind a committed plan update use the new rules", async () => {
   const f = await fixture();
   const db = await pool.connect();

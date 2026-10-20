@@ -1,27 +1,30 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { HttpError } from "./http-error.js";
 
-export function sendJson(res: ServerResponse, status: number, data: unknown): void {
-  res.writeHead(status, {
+export function sendJson(response: ServerResponse, statusCode: number, data: unknown): void {
+  response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
   });
-  res.end(JSON.stringify(data));
+  response.end(JSON.stringify(data));
 }
 
-export function handleHttpError(res: ServerResponse, error: unknown): void {
+export function handleHttpError(response: ServerResponse, error: unknown): void {
   if (error instanceof HttpError) {
-    sendJson(res, error.statusCode, { error: error.message });
+    sendJson(response, error.statusCode, { error: error.message });
     return;
   }
   console.error(error);
-  sendJson(res, 500, { error: "Internal server error" });
+  sendJson(response, 500, {
+    error: "Internal server error",
+  });
 }
 
-export async function readJson(req: IncomingMessage): Promise<unknown> {
+export async function readJson(request: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
   let size = 0;
-  for await (const chunk of req.iterator({ destroyOnReturn: false })) {
+
+  for await (const chunk of request.iterator({ destroyOnReturn: false })) {
     let buffer: Buffer;
     if (Buffer.isBuffer(chunk)) {
       buffer = chunk;
@@ -29,12 +32,13 @@ export async function readJson(req: IncomingMessage): Promise<unknown> {
       buffer = Buffer.from(chunk);
     }
     size += buffer.length;
-    if (size > 16384) {
-      req.resume();
+    if (size > 16_384) {
+      request.resume();
       throw new HttpError(413, "Request body too large");
     }
     chunks.push(buffer);
   }
+
   try {
     return JSON.parse(Buffer.concat(chunks).toString("utf8"));
   } catch {

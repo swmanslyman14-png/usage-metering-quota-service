@@ -4,18 +4,32 @@ import { HttpError } from "./http-error.js";
 
 export async function createAccount(name: string, planId: number) {
   const apiKey = generateApiKey();
+  const apiKeyHash = hashApiKey(apiKey);
+
   const plan = await pool.query(
-    `SELECT id FROM plans
-     WHERE id = $1 AND plan_type = 'account' AND is_predefined = TRUE`, [planId],
+    `SELECT id
+     FROM plans
+     WHERE id = $1
+       AND plan_type = 'account'
+       AND is_predefined = TRUE`,
+    [planId],
   );
+
   if (plan.rowCount === 0) {
     throw new HttpError(400, "Invalid account plan");
   }
-  const row = await pool.query<{ id: string }>(
+
+  const result = await pool.query<{ id: string }>(
     `INSERT INTO accounts (name, api_key_hash, plan_id)
-     VALUES ($1, $2, $3) RETURNING id`, [name, hashApiKey(apiKey), planId],
+     VALUES ($1, $2, $3)
+     RETURNING id`,
+    [name, apiKeyHash, planId],
   );
-  return { accountId: row.rows[0].id, apiKey };
+
+  return {
+    accountId: result.rows[0].id,
+    apiKey,
+  };
 }
 
 export async function getAccount(id: string) {

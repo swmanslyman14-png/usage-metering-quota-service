@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-20T09:54:48.667Z",
+  "timestamp": "2026-10-20T10:15:56.990Z",
   "node": "v24.15.0",
   "platform": "win32",
   "architecture": "x64",
@@ -12,11 +12,11 @@
       "accounts": 1,
       "acceptedResponses": 250,
       "rejectedResponses": 250,
-      "elapsedMs": 11337.11,
-      "requestsPerSecond": 44.1,
-      "p50Ms": 409.55,
-      "p95Ms": 840.74,
-      "p99Ms": 950.41,
+      "elapsedMs": 15368.11,
+      "requestsPerSecond": 32.53,
+      "p50Ms": 603.14,
+      "p95Ms": 939.04,
+      "p99Ms": 989.23,
       "correctness": "Usage equals accepted unique units; account equals summed users; history agrees"
     },
     {
@@ -26,11 +26,11 @@
       "accounts": 4,
       "acceptedResponses": 500,
       "rejectedResponses": 0,
-      "elapsedMs": 2933.01,
-      "requestsPerSecond": 170.47,
-      "p50Ms": 112.98,
-      "p95Ms": 144.93,
-      "p99Ms": 157.49,
+      "elapsedMs": 4818.13,
+      "requestsPerSecond": 103.77,
+      "p50Ms": 182.33,
+      "p95Ms": 289.02,
+      "p99Ms": 351.98,
       "correctness": "Usage equals accepted unique units; account equals summed users; history agrees"
     },
     {
@@ -40,11 +40,11 @@
       "accounts": 1,
       "acceptedResponses": 500,
       "rejectedResponses": 0,
-      "elapsedMs": 4011.97,
-      "requestsPerSecond": 124.63,
-      "p50Ms": 155.75,
-      "p95Ms": 213.98,
-      "p99Ms": 231.3,
+      "elapsedMs": 6606.58,
+      "requestsPerSecond": 75.68,
+      "p50Ms": 247.57,
+      "p95Ms": 355.13,
+      "p99Ms": 409.8,
       "correctness": "Usage equals accepted unique units; account equals summed users; history agrees"
     }
   ]

@@ -1,45 +1,96 @@
-import { pool } from "./db.js";
+import { pool, beginAccount } from "./db.js";
 import { HttpError } from "./http-error.js";
 
 export async function getUsage(accountId: string, userId: string | null, month: string | null) {
-  const row = await pool.query(
-    `WITH period AS (
-       SELECT COALESCE($3::date, date_trunc('month', clock_timestamp() AT TIME ZONE 'UTC')::date) AS month
-     )
-     SELECT to_char(t.month, 'YYYY-MM') AS month,
-            a.id AS account_id, a.plan_id AS account_plan_id,
-            ap.monthly_limit AS account_limit, ap.max_per_request AS account_max_per_request,
-            COALESCE(au.units_used, 0)::text AS account_used,
-            GREATEST(ap.monthly_limit - COALESCE(au.units_used, 0), 0)::text AS account_remaining,
-            u.id AS user_id, u.plan_id AS user_plan_id,
-            up.monthly_limit AS user_limit, up.max_per_request AS user_max_per_request,
-            COALESCE(uu.units_used, 0)::text AS user_used,
-            GREATEST(up.monthly_limit - COALESCE(uu.units_used, 0), 0)::text AS user_remaining
-     FROM accounts a JOIN plans ap ON ap.id = a.plan_id CROSS JOIN period t
-     LEFT JOIN account_usage au ON au.account_id = a.id AND au.month = t.month
-     LEFT JOIN users u ON u.account_id = a.id AND u.id = $2
-     LEFT JOIN plans up ON up.id = u.plan_id
-     LEFT JOIN user_usage uu ON uu.user_id = u.id AND uu.month = t.month
-     WHERE a.id = $1`, [accountId, userId, month],
-  );
-  const n = row.rows[0];
-  if (userId !== null && n.user_id === null) {
-    throw new HttpError(404, "User not found");
-  }
-  const account = {
-    id: n.account_id, planId: n.account_plan_id, monthlyLimit: n.account_limit,
-    maxPerRequest: n.account_max_per_request, used: n.account_used, remaining: n.account_remaining,
-  };
-  if (userId !== null) {
-    const user = {
-      id: n.user_id, planId: n.user_plan_id, monthlyLimit: n.user_limit,
-      maxPerRequest: n.user_max_per_request, used: n.user_used, remaining: n.user_remaining,
-    };
-    return { month: n.month, account, user };
-  }
-  return { month: n.month, account, user: null };
-}
+  const client = await beginAccount(accountId);
+  try {
+    if (month === null) {
+      const result = await client.query<{ time: Date }>("SELECT clock_timestamp() AS time");
+      month = result.rows[0].time.toISOString().slice(0, 7) + "-01";
+    }
 
+    const account = await client.query(
+      `SELECT a.id, a.plan_id, p.monthly_limit, p.max_per_request
+       FROM accounts AS a
+       JOIN plans AS p ON p.id = a.plan_id
+       WHERE a.id = $1`,
+      [accountId],
+    );
+
+    const accousage = await client.query<{ units_used: string }>(
+      "SELECT units_used FROM account_usage WHERE account_id = $1 AND month = $2",
+      [accountId, month],
+    );
+
+    let accused = 0n;
+    if (accousage.rows.length > 0) {
+      accused = BigInt(accousage.rows[0].units_used);
+    }
+
+    let remaining = BigInt(account.rows[0].monthly_limit) - accused;
+    if (remaining < 0n) {
+      remaining = 0n;
+    }
+
+    const a = {
+      id: account.rows[0].id,
+      planId: account.rows[0].plan_id,
+      monthlyLimit: account.rows[0].monthly_limit,
+      maxPerRequest: account.rows[0].max_per_request,
+      used: accused.toString(),
+      remaining: remaining.toString(),
+    };
+
+    if (userId === null) {
+      await client.query("COMMIT");
+      return { month: month.slice(0, 7), account: a, user: null };
+    }
+
+    const user = await client.query(
+      `SELECT u.id, u.plan_id, p.monthly_limit, p.max_per_request
+       FROM users AS u
+       JOIN plans AS p ON p.id = u.plan_id
+       WHERE u.id = $1 AND u.account_id = $2`,
+      [userId, accountId],
+    );
+
+    if (user.rowCount === 0) {
+      throw new HttpError(404, "User not found");
+    }
+
+    const userusage = await client.query<{ units_used: string }>(
+      "SELECT units_used FROM user_usage WHERE account_id = $1 AND user_id = $2 AND month = $3",
+      [accountId, userId, month],
+    );
+
+    let usused = 0n;
+    if (userusage.rows.length > 0) {
+      usused = BigInt(userusage.rows[0].units_used);
+    }
+
+    remaining = BigInt(user.rows[0].monthly_limit) - usused;
+    if (remaining < 0n) {
+      remaining = 0n;
+    }
+
+    const u = {
+      id: user.rows[0].id,
+      planId: user.rows[0].plan_id,
+      monthlyLimit: user.rows[0].monthly_limit,
+      maxPerRequest: user.rows[0].max_per_request,
+      used: usused.toString(),
+      remaining: remaining.toString(),
+    };
+
+    await client.query("COMMIT");
+    return { month: month.slice(0, 7), account: a, user: u };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 export async function getHistory(accountId: string, userId: string | null, month: string | null, limit: number, offset: number) {
   if (userId !== null) {
     const user = await pool.query("SELECT id FROM users WHERE account_id = $1 AND id = $2", [accountId, userId]);

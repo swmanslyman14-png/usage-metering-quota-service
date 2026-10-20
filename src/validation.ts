@@ -44,11 +44,35 @@ export function validatePlanId(body: unknown) {
 }
 
 export function validateNameAndPlanId(body: unknown) {
-  const row = validateBody(body);
-  if (!("name" in row)) {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    throw new HttpError(400, "Invalid request body");
+  }
+
+  if (!("name" in body)) {
     throw new HttpError(400, "Name is missing");
   }
-  return { name: validateName(row.name), planId: validatePlanId(row) };
+
+  if (typeof body.name !== "string" ||
+      body.name.trim().length === 0 ||
+      body.name.trim().length > 100 ||
+      body.name.includes("\u0000")) {
+    throw new HttpError(400, "Invalid name");
+  }
+
+  if (!("planId" in body)) {
+    throw new HttpError(400, "Plan ID is missing");
+  }
+
+  if (typeof body.planId !== "number" ||
+      body.planId <= 0 ||
+      !Number.isSafeInteger(body.planId)) {
+    throw new HttpError(400, "Invalid plan ID");
+  }
+
+  return {
+    name: body.name.trim(),
+    planId: body.planId,
+  };
 }
 
 export function validatePlan(body: unknown) {
