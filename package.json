@@ -1,0 +1,31 @@
+{
+  "name": "usage-metering-service",
+  "version": "1.0.0",
+  "description": "Account and user usage metering with atomic quotas and safe retries",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "test": "npm run build && node --test test/unit.test.js",
+    "test:integration": "npm run build && node --env-file-if-exists=.local/test.env --test test/integration.test.js",
+    "example": "node examples/client.js",
+    "load": "npm run build && node --env-file-if-exists=.local/test.env scripts/load.js",
+    "db:init": "node scripts/init-db.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

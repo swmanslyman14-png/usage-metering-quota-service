@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-10-20T09:47:24.437Z",
+  "node": "v24.15.0",
+  "platform": "win32",
+  "architecture": "x64",
+  "database": "18.6 (Debian 18.6-1.pgdg13+2)",
+  "scenarios": [
+    {
+      "name": "shared-account-quota",
+      "requests": 500,
+      "concurrency": 20,
+      "accounts": 1,
+      "acceptedResponses": 250,
+      "rejectedResponses": 250,
+      "elapsedMs": 16425.34,
+      "requestsPerSecond": 30.44,
+      "p50Ms": 646.18,
+      "p95Ms": 947.92,
+      "p99Ms": 995.45,
+      "correctness": "Usage equals accepted unique units; account equals summed users; history agrees"
+    },
+    {
+      "name": "four-accounts",
+      "requests": 500,
+      "concurrency": 20,
+      "accounts": 4,
+      "acceptedResponses": 500,
+      "rejectedResponses": 0,
+      "elapsedMs": 8086.63,
+      "requestsPerSecond": 61.83,
+      "p50Ms": 292.79,
+      "p95Ms": 525.7,
+      "p99Ms": 950.82,
+      "correctness": "Usage equals accepted unique units; account equals summed users; history agrees"
+    },
+    {
+      "name": "same-request-retries",
+      "requests": 500,
+      "concurrency": 20,
+      "accounts": 1,
+      "acceptedResponses": 500,
+      "rejectedResponses": 0,
+      "elapsedMs": 4597.7,
+      "requestsPerSecond": 108.75,
+      "p50Ms": 180.38,
+      "p95Ms": 254.15,
+      "p99Ms": 299.91,
+      "correctness": "Usage equals accepted unique units; account equals summed users; history agrees"
+    }
+  ]
+}
